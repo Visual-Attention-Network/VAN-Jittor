@@ -1,5 +1,6 @@
 import jittor as jt
 import jittor.nn as nn
+from jittor import init
 import math
 
 from .registry import register_model
@@ -40,11 +41,13 @@ class Mlp(nn.Module):
         elif isinstance(m, nn.Conv2d):
             fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            # m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            init.gauss_(m.weight, 0.0, math.sqrt(2.0 / fan_out))
             if m.bias is not None:
-                m.bias.data.zero_()
+                # m.bias.data.zero_()
+                init.constant_(m.bias)
 
-    def forward(self, x):
+    def execute(self, x):
         x = self.fc1(x)
         x = self.dwconv(x)
         x = self.act(x)
@@ -64,7 +67,7 @@ class AttentionModule(nn.Module):
         self.conv1 = nn.Conv2d(dim, dim, 1)
 
 
-    def forward(self, x):
+    def execute(self, x):
         u = x.clone()        
         attn = self.conv0(x)
         attn = self.conv_spatial(attn)
@@ -82,7 +85,7 @@ class SpatialAttention(nn.Module):
         self.spatial_gating_unit = AttentionModule(d_model)
         self.proj_2 = nn.Conv2d(d_model, d_model, 1)
 
-    def forward(self, x):
+    def execute(self, x):
         shorcut = x.clone()
         x = self.proj_1(x)
         x = self.activation(x)
@@ -103,12 +106,19 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
         layer_scale_init_value = 1e-2            
-        self.layer_scale_1 = nn.Parameter(
-            layer_scale_init_value * jt.ones((dim)), requires_grad=True)
-        self.layer_scale_2 = nn.Parameter(
-            layer_scale_init_value * jt.ones((dim)), requires_grad=True)
+        # self.layer_scale_1 = nn.Parameter(
+        #     layer_scale_init_value * jt.ones((dim)), requires_grad=True)
+        # self.layer_scale_2 = nn.Parameter(
+        #     layer_scale_init_value * jt.ones((dim)), requires_grad=True)
+        self.layer_scale_1 = jt.start_grad(jt.Var(
+            layer_scale_init_value * jt.ones((dim))))
+        self.layer_scale_2 = jt.start_grad(jt.Var(
+            layer_scale_init_value * jt.ones((dim))))
 
         self.apply(self._init_weights)
+
+    # def start_grad(x):
+    #     return x._update(x)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -121,11 +131,13 @@ class Block(nn.Module):
         elif isinstance(m, nn.Conv2d):
             fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            # m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            init.gauss_(m.weight, 0.0, math.sqrt(2.0 / fan_out))
             if m.bias is not None:
-                m.bias.data.zero_()
+                # m.bias.data.zero_()
+                init.constant_(m.bias)
 
-    def forward(self, x):
+    def execute(self, x):
         x = x + self.drop_path(self.layer_scale_1.unsqueeze(-1).unsqueeze(-1) * self.attn(self.norm1(x)))
         x = x + self.drop_path(self.layer_scale_2.unsqueeze(-1).unsqueeze(-1) * self.mlp(self.norm2(x)))
         return x
@@ -161,11 +173,14 @@ class OverlapPatchEmbed(nn.Module):
         elif isinstance(m, nn.Conv2d):
             fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
-            if m.bias is not None:
-                m.bias.data.zero_()
+            # m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            init.gauss_(m.weight, 0.0, math.sqrt(2.0 / fan_out))
 
-    def forward(self, x):
+            if m.bias is not None:
+                # m.bias.data.zero_()
+                init.constant_(m.bias)
+
+    def execute(self, x):
         x = self.proj(x)
         _, _, H, W = x.shape
         x = self.norm(x)        
@@ -218,14 +233,16 @@ class VAN(nn.Module):
         elif isinstance(m, nn.Conv2d):
             fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            # m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            init.gauss_(m.weight, 0.0, math.sqrt(2.0 / fan_out))
             if m.bias is not None:
-                m.bias.data.zero_()
+                # m.bias.data.zero_()
+                init.constant_(m.bias)
 
     def freeze_patch_emb(self):
         self.patch_embed1.requires_grad = False
 
-    @torch.jit.ignore
+    # @torch.jit.ignore
     def no_weight_decay(self):
         return {'pos_embed1', 'pos_embed2', 'pos_embed3', 'pos_embed4', 'cls_token'}  # has pos_embed may be better
 
@@ -246,14 +263,15 @@ class VAN(nn.Module):
             x, H, W = patch_embed(x)
             for blk in block:
                 x = blk(x)
-            x = x.flatten(2).transpose(1, 2)
+            # x = x.flatten(2).transpose(1, 2)
+            x = jt.transpose(x.flatten(2),0,2,1)
             x = norm(x)
             if i != self.num_stages - 1:
-                x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2)#.contiguous()
 
         return x.mean(dim=1)
 
-    def forward(self, x):
+    def execute(self, x):
         x = self.forward_features(x)
         x = self.head(x)
 
@@ -265,7 +283,7 @@ class DWConv(nn.Module):
         super(DWConv, self).__init__()
         self.dwconv = nn.Conv2d(dim, dim, 3, 1, 1, bias=True, groups=dim)
 
-    def forward(self, x):
+    def execute(self, x):
         x = self.dwconv(x)
         return x
 
@@ -321,3 +339,5 @@ def van_large(pretrained=False, **kwargs):
     model.default_cfg = _cfg()
 
     return model
+
+
