@@ -1,5 +1,3 @@
-## VAN-Jittor
-
 This is a Jittor implementation of VAN proposed by our paper "Visual Attention Network". We will conduct experiment on CUB classification dataset. 
 
 CUB is a widely-used dataset for fine-grained visual categorization task.
@@ -21,8 +19,10 @@ More results will come soon,imagenet-1K pretrianed weight can be loaded in [Here
 
 ## Train 
 ```
-1.use pytorch to convert van parameters downloaded from: https://cloud.tsinghua.edu.cn/f/58e7acceaf334ecdba89/?dl=1 and follow the instructions in train_cub.py to transform it to pth file.
-2.python train_cub.py
+1.download van parameters from: https://cloud.tsinghua.edu.cn/f/58e7acceaf334ecdba89/?dl=1 
+2.follow the instructions in train_cub.py to transform it to pth file.
+3.download CUB dataset from http://www.vision.caltech.edu/visipedia-data/CUB-200-2011/CUB_200_2011.tgz
+4.python train_cub.py (need to edit the path of CUB dataset)
 ```
 
 
