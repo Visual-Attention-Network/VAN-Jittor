@@ -4,9 +4,11 @@ This is a Jittor implementation of VAN proposed by our paper "Visual Attention N
 
 CUB is a widely-used dataset for fine-grained visual categorization task.
 
-## Result 
+## Results
 
 | VAN-Base | 87.6 |
+| -------- | ---- |
+
 
 
 
