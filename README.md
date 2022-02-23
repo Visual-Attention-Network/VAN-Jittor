@@ -4,11 +4,17 @@ This is a Jittor implementation of VAN proposed by our paper "Visual Attention N
 
 CUB is a widely-used dataset for fine-grained visual categorization task.
 
+## Requirement 
+
+1. Jittor
+2. Jimm
+
 ## Results
 
 | VAN-Base | 87.6 |
 | -------- | ---- |
 
+More results will come soon.
 
 
 
@@ -16,7 +22,6 @@ CUB is a widely-used dataset for fine-grained visual categorization task.
 ```
 python train.py
 ```
-
 
 
 ## Acknowledgment
