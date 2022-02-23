@@ -14,7 +14,7 @@ CUB is a widely-used dataset for fine-grained visual categorization task.
 | VAN-Base | 87.6 |
 | -------- | ---- |
 
-More results will come soon.
+More results will come soon,imagenet-1K pretrianed weight can be loaded in [Here](https://github.com/Visual-Attention-Network/VAN-Classification).
 
 
 
