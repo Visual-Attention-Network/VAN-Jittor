@@ -6,7 +6,7 @@ CUB is a widely-used dataset for fine-grained visual categorization task.
 
 1. Jittor
 2. Jimm
-3. pytorch==1.12.0
+3. pytorch==1.7.0
 
 ## Results
 
