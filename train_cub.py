@@ -99,7 +99,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, accum_iter
 
         optimizer.backward(loss)
         if (i + 1) % accum_iter == 0 or i + 1 == len(train_loader):
-            optimizer.step(loss)
+            optimizer.step()
 
         if labels.ndim == 2:
             labels = jt.argmax(labels, 1)[0]
