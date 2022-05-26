@@ -110,10 +110,10 @@ class Block(nn.Module):
         #     layer_scale_init_value * jt.ones((dim)), requires_grad=True)
         # self.layer_scale_2 = nn.Parameter(
         #     layer_scale_init_value * jt.ones((dim)), requires_grad=True)
-        self.layer_scale_1 = jt.start_grad(jt.Var(
-            layer_scale_init_value * jt.ones((dim))))
-        self.layer_scale_2 = jt.start_grad(jt.Var(
-            layer_scale_init_value * jt.ones((dim))))
+        self.layer_scale_1 = jt.Var(
+            layer_scale_init_value * jt.ones((dim))).start_grad()
+        self.layer_scale_2 = jt.Var(
+            layer_scale_init_value * jt.ones((dim))).start_grad()
 
         self.apply(self._init_weights)
 
